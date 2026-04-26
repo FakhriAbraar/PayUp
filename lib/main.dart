@@ -2,20 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
-// Pastikan file-file ini sudah ada di foldernya masing-masing
 import 'firebase_options.dart';
-import 'services/database_service.dart';
+import 'services/database_services.dart';
+
+// Mengimpor file-file screen yang baru dibuat
 import 'screens/login.dart';
+import 'screens/register.dart';
+import 'screens/home.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Inisialisasi Firebase
+  // Inisialisasi Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // 2. Inisialisasi Isar Database
+  // Inisialisasi Isar Database
   await PayUpDatabase.initialize();
 
   runApp(
@@ -34,8 +37,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'PayUp',
-      // Gunakan LoginScreen sebagai halaman pertama saat aplikasi dibuka
-      home: const LoginScreen(),
+      initialRoute: 'login', // Aplikasi mulai dari halaman login
+      routes: {
+        'login': (context) => const LoginScreen(),
+        'register': (context) => const RegisterScreen(),
+        'home': (context) => const HomeScreen(),
+      },
     );
   }
 }
