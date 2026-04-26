@@ -16,9 +16,9 @@ class PayUpDatabase extends ChangeNotifier {
     );
   }
 
-  // 2. Operasi CRUD & Sinkronisasi ke Firebase
   final List<Bill> currentBills = [];
 
+  // 2. CREATE: Simpan ke Isar & Firebase
   Future<void> addBill(String title, double amount, List<SplitDetail> splits) async {
     final newBill = Bill()
       ..title = title
@@ -44,10 +44,27 @@ class PayUpDatabase extends ChangeNotifier {
     fetchBills();
   }
 
+  // 3. READ: Ambil Data Tagihan
   Future<void> fetchBills() async {
     List<Bill> fetched = await isar.bills.where().findAll();
+    // Pastikan relasi daftar teman ikut dimuat
+    for (var bill in fetched) {
+      await bill.splitDetails.load();
+    }
     currentBills.clear();
     currentBills.addAll(fetched);
     notifyListeners();
+  }
+
+  // 4. UPDATE: Ubah Status Lunas/Belum
+  Future<void> updatePaymentStatus(int detailId, bool isPaid) async {
+    final detail = await isar.splitDetails.get(detailId);
+    if (detail != null) {
+      detail.isPaid = isPaid;
+      await isar.writeTxn(() async {
+        await isar.splitDetails.put(detail);
+      });
+      fetchBills(); // Refresh UI
+    }
   }
 }

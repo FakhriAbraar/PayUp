@@ -2,24 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
+// Opsi Firebase hasil generate FlutterFire CLI
 import 'firebase_options.dart';
-import 'services/database_services.dart';
 
-// Mengimpor file-file screen yang baru dibuat
+// Import Services
+import 'services/database_services.dart';
+import 'services/notification_services.dart';
+
+// Import Halaman
 import 'screens/login.dart';
 import 'screens/register.dart';
 import 'screens/home.dart';
+import 'screens/add_bill.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inisialisasi Firebase
+  // 1. Inisialisasi Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Inisialisasi Isar Database
+  // 2. Inisialisasi Isar Database Lokal
   await PayUpDatabase.initialize();
+
+  // 3. Inisialisasi Fitur Notifikasi
+  await NotificationService.initialize();
 
   runApp(
     ChangeNotifierProvider(
@@ -37,11 +45,17 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'PayUp',
-      initialRoute: 'login', // Aplikasi mulai dari halaman login
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
+      // Navigasi awal ke halaman Login
+      initialRoute: 'login',
       routes: {
         'login': (context) => const LoginScreen(),
         'register': (context) => const RegisterScreen(),
         'home': (context) => const HomeScreen(),
+        'add-bill': (context) => const AddBillScreen(),
       },
     );
   }

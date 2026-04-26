@@ -33,19 +33,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text,
+        // .trim() mencegah error jika ada spasi di akhir email
+        email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+      // Jika sukses, lempar pengguna ke halaman login
       navigateLogin();
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorCode = e.code;
       });
+    } catch (e) {
+      setState(() {
+        _errorCode = "Terjadi kesalahan: ${e.toString()}";
+      });
+    } finally {
+      // Blok ini memastikan loading berhenti apa pun hasilnya
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   @override

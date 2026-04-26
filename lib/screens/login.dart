@@ -33,7 +33,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text,
+        // .trim() mencegah error jika ada spasi di akhir email
+        email: _emailController.text.trim(),
         password: _passwordController.text,
       );
       navigateHome();
@@ -41,11 +42,18 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _errorCode = e.code;
       });
+    } catch (e) {
+      setState(() {
+        _errorCode = "Terjadi kesalahan: ${e.toString()}";
+      });
+    } finally {
+      // Blok ini memastikan loading berhenti apa pun hasilnya
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   @override
