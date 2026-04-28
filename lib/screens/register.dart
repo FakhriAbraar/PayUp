@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Tambahan untuk database users
 import 'package:flutter/material.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -9,6 +10,7 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final _usernameController = TextEditingController(); // Controller baru untuk Username
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
@@ -20,25 +22,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
     Navigator.pushReplacementNamed(context, 'login');
   }
 
-  void navigateHome() {
-    if (!context.mounted) return;
-    Navigator.pushReplacementNamed(context, 'home');
-  }
-
   void register() async {
+    // Validasi form kosong
+    if (_usernameController.text.isEmpty || _emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      setState(() {
+        _errorCode = "Semua kolom wajib diisi!";
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorCode = "";
     });
 
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        // .trim() mencegah error jika ada spasi di akhir email
+      // 1. Buat akun di Firebase Auth
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+
+      // 2. Simpan Username ke profil bawaan Firebase
+      await userCredential.user!.updateDisplayName(_usernameController.text.trim());
+
+      // 3. Simpan data user ke database Firestore agar bisa dicari teman nanti
+      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+        'username': _usernameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+
       // Jika sukses, lempar pengguna ke halaman login
       navigateLogin();
+
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorCode = e.code;
@@ -48,7 +65,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _errorCode = "Terjadi kesalahan: ${e.toString()}";
       });
     } finally {
-      // Blok ini memastikan loading berhenti apa pun hasilnya
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -66,28 +82,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Center(
           child: ListView(
             children: [
-              const SizedBox(height: 48),
-              Icon(Icons.person_add, size: 100, color: Colors.blue[300]),
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
+              Icon(Icons.person_add_alt_1, size: 100, color: Colors.blue[300]),
+              const SizedBox(height: 32),
+
+              // Kolom Input Username Baru
+              TextField(
+                controller: _usernameController,
+                decoration: const InputDecoration(
+                  labelText: 'Username',
+                  prefixIcon: Icon(Icons.person),
+                ),
+              ),
+              const SizedBox(height: 16),
+
               TextField(
                 controller: _emailController,
-                decoration: const InputDecoration(label: Text('Email')),
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email),
+                ),
               ),
+              const SizedBox(height: 16),
+
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: const InputDecoration(label: Text('Password')),
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: Icon(Icons.lock),
+                ),
               ),
               const SizedBox(height: 24),
+
               _errorCode != ""
                   ? Column(children: [Text(_errorCode, style: const TextStyle(color: Colors.red)), const SizedBox(height: 24)])
                   : const SizedBox(height: 0),
+
               OutlinedButton(
                 onPressed: register,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
                 child: _isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text('Register'),
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('Register', style: TextStyle(fontSize: 16)),
               ),
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
